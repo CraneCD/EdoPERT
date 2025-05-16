@@ -90,6 +90,41 @@ export default function PertApp() {
     task.tags.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // New export function
+  const exportTasks = () => {
+    // Prepare data for export
+    const exportData = tasks.map(task => {
+      const { expected, stdDev } = calculateEstimates(task);
+      return {
+        'Task ID': task.originalId || task.id,
+        'Task Name': task.name,
+        'Optimistic (Hours)': task.optimistic,
+        'Most Likely (Hours)': task.mostLikely,
+        'Pessimistic (Hours)': task.pessimistic,
+        'Expected Duration (Hours)': expected,
+        'Standard Deviation': stdDev
+      };
+    });
+
+    // Generate CSV content
+    const csv = Papa.unparse(exportData);
+    
+    // Create a Blob and download link
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    // Set link properties
+    link.setAttribute('href', url);
+    link.setAttribute('download', `pert_estimation_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    
+    // Add to document, click and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-blue-700">PERT Estimator</h1>
@@ -114,6 +149,18 @@ export default function PertApp() {
             Import from CSV
           </button>
         </div>
+
+        <button
+          onClick={exportTasks}
+          disabled={tasks.length === 0 || !tasks.some(t => t.name)}
+          className={`px-4 py-2 rounded ${
+            tasks.length > 0 && tasks.some(t => t.name)
+              ? 'bg-purple-600 text-white hover:bg-purple-700' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          Export to CSV
+        </button>
       </div>
       
       {showImported && (
